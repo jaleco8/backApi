@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 /*
 |--------------------------------------------------------------------------
@@ -13,43 +12,23 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/ejemplo', function () {
-    return 'Hola';
-});
-
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\CheckAuthToken;
 
-
-//Route::post('register', [AuthController::class, 'register'])->name('register');
 Route::post('login', [AuthController::class, 'login'])->name('login');
 Route::post('register', [UserController::class, 'store']);
 
-
 // Rutas protegidas por autenticación
-Route::middleware(['auth:api', 'checkAuthToken'])->group(function () {
+Route::middleware([CheckAuthToken::class])->group(function () {
+    // Ruta para cerrar sesión
+    Route::post('logout', [AuthController::class, 'logout']);
+    // Ruta para refrescar el token
+    Route::post('refresh',  [AuthController::class, 'refresh']);
     // Rutas de API v1
     Route::prefix('v1')->group(function () {
         // CRUD de usuarios
-        Route::resource('users', 'UserController')->except(['create', 'edit']);
-
-        //Listar un usuario
-        Route::get('users', [UserController::class, 'index']);
-        Route::get('users/{user}', [UserController::class, 'show']);
-
-        // Rutas adicionales para actualizar, activar, desactivar y eliminar usuarios
-        Route::put('users/{user}', [UserController::class, 'update']);
-        Route::put('users/{user}/status/{status}',  [UserController::class, 'status']);
-        Route::delete('users/{user}',  [UserController::class, 'destroy']);
-
-        // Ruta para refrescar el token
-        Route::post('refresh',  [AuthController::class, 'refresh']);
-
-
-        // Ruta para obtener el usuario autenticado
-        Route::get('/user', function (Request $request) {
-            return $request->user();
-        })->middleware('auth:api');
+        Route::apiResource('users', UserController::class);
     });
 });
 

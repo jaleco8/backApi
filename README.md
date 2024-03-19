@@ -66,6 +66,8 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 ## DockerFile 
 docker-compose up --build
 
+CREATE DATABASE `waco_test`
+
 ## DATOS DE LOGIN DEFAULT
 {
     "email": "jaleco@gmail.com",

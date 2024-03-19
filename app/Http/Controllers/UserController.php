@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -71,41 +72,39 @@ class UserController extends Controller
     {
         try {
             // Validar si otro usuario ya tiene el mismo correo electrónico
-            $existingUser = User::where('email', $request->input('email'))->where('id', '!=', $user->id)->first();
-            if ($existingUser) {
-                return response()->json(['error' => 'Another user already has this email'], 422);
+            if($request->has('email') && $request->input('email') !== $user->email) {
+                $existingUser = User::where('email', $request->input('email'))->where('id', '!=', $user->id)->first();
+                if ($existingUser) {
+                    return response()->json(['error' => 'Another user already has this email'], 422);
+                }
             }
 
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-                'password' => 'required|string|min:8',
+            $rules = [
+                'name' => 'string|max:255',
+                'email' => 'string|email|max:255|unique:users,email,' . $user->id,
+                'password' => 'string|min:8',
                 'active' => 'boolean',
-            ]);
+            ];
+
+            // Filtrar solo los campos presentes en la solicitud
+            $requestData = $request->only(array_keys($rules));
+
+            $validator = Validator::make($requestData, $rules);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
 
             $user->update([
-                'name' => $request->input('name'),
-                'email' => $request->input('email'),
-                'password' => Hash::make($request->input('password')),
-                'active' => $request->input('active', true),
+                'name' => $request->has('name') ? $request->input('name') : $user->name,
+                'email' => $request->has('email') ? $request->input('email') : $user->email,
+                'password' => $request->has('password') ? Hash::make($request->input('password')) : $user->password,
+                'active' => $request->has('active') ? $request->input('active') : $user->active,
             ]);
 
             return response()->json(['message' => 'User updated successfully'], 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Internal server error'], 500);
-        }
-    }
-    /**
-     * Activate or deactivate the specified resource in storage.
-     */
-    public function status(User $user, $status)
-    {
-        try {
-            $user->update(['active' => $status]);
-            $message = $status ? 'User activated successfully' : 'User deactivated successfully';
-            return response()->json(['message' => $message], 200);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Internal error Update User'], 500);
+            return response()->json(['error' => 'Internal server error', $e], 500);
         }
     }
 
