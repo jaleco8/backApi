@@ -21,11 +21,6 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Instalar las dependencias de Composer
 RUN composer install
 
-# Esperar a que la base de datos esté lista y accesible
-COPY wait-for-db.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/wait-for-db.sh
-CMD ["wait-for-db.sh"]
-
 # Ejecutar las migraciones de la base de datos
 RUN php artisan migrate --force
 
